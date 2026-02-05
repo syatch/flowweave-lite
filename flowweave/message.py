@@ -60,6 +60,11 @@ class FlowMessage:
         FlowMessage._print(text)
 
     @staticmethod
+    def stage_ignore(stage: str, part: int, all: int) -> None:
+        text = f"{Fore.MAGENTA}[Flow {part} / {all}] Ignore Stage {stage}"
+        FlowMessage._print(text)
+
+    @staticmethod
     def stage_end(stage: str, part: int, all: int, result: FlowWeaveResult) -> None:
         result_text = FlowMessage.get_result_text(result)
         text = f"{Fore.MAGENTA}[Flow {part} / {all}] Finish Stage {stage} - {result_text}"

@@ -12,6 +12,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+import traceback
 
 # Third-party
 import jsonschema
@@ -70,7 +71,9 @@ class TaskRunner:
             try:
                 task_result, return_data = task_instance()
             except Exception as e:
-                FlowMessage.error(e)
+                err = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                FlowMessage.error(err)
+
                 task_result = FlowWeaveResult.FAIL
                 return_data = None
 
@@ -303,6 +306,10 @@ class FlowWeave():
 
         stage_list = flow_data.get("flow")
         for stage in stage_list:
+            if FlowWeaveResult.FAIL == flow_result:
+                FlowMessage.stage_ignore(stage, part, all)
+                continue
+
             FlowMessage.stage_start(stage, part, all)
 
             stage_info = flow_data.get("stage", {}).get(stage)
