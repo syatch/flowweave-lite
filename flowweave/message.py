@@ -39,14 +39,15 @@ class FlowMessage:
         FlowMessage._print(text)
 
     @staticmethod
-    def flow_print(part: int, all: int, text: dict) -> None:
-        message = f"[Flow {part} / {all}] {text}"
-        FlowMessage._print(message)
-
-    @staticmethod
-    def flow_message(part: int, all: int, global_option: dict) -> None:
-        text = f"[Flow {part} / {all}] {global_option}"
-        FlowMessage._print(text)
+    def flow_message(part: int,
+                     all: int,
+                     *args: object,
+                     sep: str = " ",
+                     end: str = "\n",
+                     file: Optional[IO[str]] = None,
+                     flush: bool = False) -> None:
+        args = [f"[Flow {part} / {all}] {str(a)}" for a in args]
+        FlowMessage._print(*args, sep=sep, end=end, file=file, flush=flush)
 
     @staticmethod
     def flow_end(part: int, all: int, result: FlowWeaveResult) -> None:
@@ -89,6 +90,16 @@ class FlowMessage:
     def task_ignore_link(task_data: TaskData, prev_task_name: str) -> None:
         text = f"{Fore.CYAN}[Flow {task_data.flow_part} / {task_data.flow_all}] Ignore {prev_task_name} -> {task_data.name} (do_only : {task_data.do_only})"
         FlowMessage._print(text)
+
+    @staticmethod
+    def task_message(task_data: TaskData,
+                     *args: object,
+                     sep: str = " ",
+                     end: str = "\n",
+                     file: Optional[IO[str]] = None,
+                     flush: bool = False) -> None:
+        args = [f"{Fore.CYAN}[Flow {task_data.flow_part} / {task_data.flow_all}] {task_data.stage_name}/{task_data.name}: {str(a)}" for a in args]
+        FlowMessage._print(*args, sep=sep, end=end, file=file, flush=flush)
 
     @staticmethod
     def task_end(task_data: TaskData, result: FlowWeaveResult) -> None:

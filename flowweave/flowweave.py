@@ -53,10 +53,7 @@ class TaskRunner:
             raise TypeError(f"Failed to get instance of '{task_data.task_class}'")
 
         setattr(task_instance, "task_data", task_data)
-
-        for key, value in task_data.option.items():
-            if hasattr(task_instance, key):
-                setattr(task_instance, key, value)
+        TaskRunner.store_attr(task_data, task_instance, task_data.option)
 
         run_task = True
         if prev_result is not None:
@@ -90,6 +87,33 @@ class TaskRunner:
             "result": task_result,
         }
 
+    def store_attr(task_data, parent_attr, value: dict):
+        for key, val in value.items():
+            if not hasattr(parent_attr, key):
+                if task_data.show_log:
+                    FlowMessage.task_message(task_data, f"Task option {key} not found: ignore")
+                continue
+
+            if isinstance(val, dict):
+                child_attr = getattr(parent_attr, key)
+
+                for sub_key, sub_val in val.items():
+                    if not hasattr(child_attr, sub_key):
+                        continue
+
+                    if isinstance(sub_val, dict):
+                        TaskRunner.store_attr(task_data, getattr(child_attr, sub_key), sub_val)
+                    else:
+                        setattr(child_attr, sub_key, sub_val)
+
+                        if task_data.show_log:
+                            FlowMessage.task_message(task_data,
+                                                   f"Task option {key}.{sub_key} found: store {sub_val}")
+            else:
+                setattr(parent_attr, key, val)
+                if task_data.show_log:
+                    FlowMessage.task_message(task_data, f"Task option {key} found: store {val}")
+
     def message_task_start(prev_result, task_data: TaskData):
         if prev_result is not None:
             prev_task_name = prev_result.get("name")
@@ -106,6 +130,8 @@ class TaskRunner:
 
 class FlowWeave():
     def run(setting_file: str, parallel: bool = False, show_log: bool = False) -> list[FlowWeaveResult]:
+        results = []
+
         if not show_log:
             logging.getLogger("prefect").setLevel(logging.CRITICAL)
 
@@ -127,7 +153,6 @@ class FlowWeave():
             comb_count = 0
             all_count = len(comb_list)
             futures = []
-            results = []
             for comb in comb_list:
                 comb_count += 1
                 FlowMessage.flow_start(comb_count, all_count)
@@ -160,10 +185,14 @@ class FlowWeave():
                     results.append(result)
                     FlowMessage.flow_end(comb_count, all_count, result)
 
-            return results
+        except Exception as e:
+            err = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            FlowMessage.error(err)
         finally:
             flow_executor.shutdown(wait=True)
             task_executor.shutdown(wait=True)
+
+        return results
 
     def load_and_validate_schema(file: str, schema: str) -> dict:
         data = FlowWeave._load_yaml(file)
@@ -300,7 +329,7 @@ class FlowWeave():
             text = "= Flow =\n"
             text += f"Stage: {flow_data.get('flow')}\n"
             text += "========"
-            FlowMessage.flow_print(text)
+            FlowMessage.flow_message(part, all, text)
 
         default_option = flow_data.get("default_option", {})
 
@@ -317,7 +346,7 @@ class FlowWeave():
 
             stage_data = StageData(stage, stage_info, default_option, stage_global_option, op_dic, part, all)
             if show_log:
-                FlowMessage.flow_print(str(stage_data))
+                FlowMessage.flow_message(part, all, str(stage_data))
 
             result = FlowWeave._run_stage(stage_data, executor, show_log)
             if FlowWeaveResult.FAIL == result:
