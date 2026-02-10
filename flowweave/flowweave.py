@@ -88,34 +88,39 @@ class TaskRunner:
         }
 
     def store_attr(task_data, parent_attr, value: dict):
+        all_attr_not_exist = True
         for key, val in value.items():
             if not hasattr(parent_attr, key):
                 if task_data.show_log:
                     FlowMessage.task_message(task_data, f"Task option: {key} not found: ignore")
                 continue
 
+            all_attr_not_exist = False
+
             if isinstance(val, dict):
                 child_attr = getattr(parent_attr, key)
 
-                all_attr_not_exist = True
+                all_sub_attr_not_exist = True
                 for sub_key, sub_val in val.items():
                     if not hasattr(child_attr, sub_key):
                         if task_data.show_log:
                             FlowMessage.task_message(task_data,
                                                      f"Task option: attr {sub_key} in {child_attr} not found: continue")
                         continue
-                        
-                    all_attr_not_exist = False
+
+                    all_sub_attr_not_exist = False
 
                     if isinstance(sub_val, dict):
-                        TaskRunner.store_attr(task_data, getattr(child_attr, sub_key), sub_val)
+                        all_sub_val_not_exist = TaskRunner.store_attr(task_data, getattr(child_attr, sub_key), sub_val)
+                        if all_sub_val_not_exist:
+                            setattr(child_attr, sub_key, sub_val)
                     else:
                         setattr(child_attr, sub_key, sub_val)
 
                         if task_data.show_log:
                             FlowMessage.task_message(task_data,
                                                      f"Task option: {key}.{sub_key} found: store {sub_val}")
-                if all_attr_not_exist:
+                if all_sub_attr_not_exist:
                     if task_data.show_log:
                         FlowMessage.task_message(task_data, f"Task option: all sub_key not found: store dict")
                     setattr(parent_attr, key, val)
@@ -123,6 +128,8 @@ class TaskRunner:
                 setattr(parent_attr, key, val)
                 if task_data.show_log:
                     FlowMessage.task_message(task_data, f"Task option: {key} found: store {val}")
+
+        return all_attr_not_exist
 
     def message_task_start(prev_result, task_data: TaskData):
         if prev_result is not None:
