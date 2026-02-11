@@ -19,7 +19,7 @@ class FlowMessage:
             print(*args, sep=sep, end=end, file=file, flush=flush)
 
     @staticmethod
-    def get_result_text(result: FlowWeaveResult) -> str:
+    def get_flow_result_text(result: FlowWeaveResult) -> str:
         text = ""
 
         if FlowWeaveResult.SUCCESS == result:
@@ -32,6 +32,15 @@ class FlowMessage:
             text = f"{Fore.MAGENTA}UNKNOWN: {result.name}({result.value})"
 
         return text
+
+    @staticmethod
+    def get_result_text(results: list[FlowWeaveResult]) -> str:
+        success_count = results.count(FlowWeaveResult.SUCCESS)
+        fail_count = results.count(FlowWeaveResult.FAIL)
+        ignore_count = results.count(FlowWeaveResult.IGNORE)
+        unknown_count = len(results) - (success_count + fail_count + ignore_count)
+
+        return f"SUCCESS: {success_count} FAIL: {fail_count} IGNORE: {ignore_count} UNKNOWN: {unknown_count}"
 
     @staticmethod
     def flow_start(part: int, all: int) -> None:
@@ -51,8 +60,14 @@ class FlowMessage:
 
     @staticmethod
     def flow_end(part: int, all: int, result: FlowWeaveResult) -> None:
-        result_text = FlowMessage.get_result_text(result)
+        result_text = FlowMessage.get_flow_result_text(result)
         text = f"{Fore.YELLOW}[Flow {part} / {all}] Finish - {result_text}"
+        FlowMessage._print(text)
+
+    @staticmethod
+    def flow_result(results: list[FlowWeaveResult]) -> None:
+        result_text = FlowMessage.get_result_text(results)
+        text = f"{Fore.YELLOW}[Result] {result_text}"
         FlowMessage._print(text)
 
     @staticmethod
@@ -67,7 +82,7 @@ class FlowMessage:
 
     @staticmethod
     def stage_end(stage: str, part: int, all: int, result: FlowWeaveResult) -> None:
-        result_text = FlowMessage.get_result_text(result)
+        result_text = FlowMessage.get_flow_result_text(result)
         text = f"{Fore.MAGENTA}[Flow {part} / {all}] Finish Stage {stage} - {result_text}"
         FlowMessage._print(text)
 
@@ -103,7 +118,7 @@ class FlowMessage:
 
     @staticmethod
     def task_end(task_data: TaskData, result: FlowWeaveResult) -> None:
-        result_text = FlowMessage.get_result_text(result)
+        result_text = FlowMessage.get_flow_result_text(result)
         text = f"{Fore.CYAN}[Flow {task_data.flow_part} / {task_data.flow_all}] Finish Task {task_data.stage_name}/{task_data.name} - {result_text}"
         FlowMessage._print(text)
 
