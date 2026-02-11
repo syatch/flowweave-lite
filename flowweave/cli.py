@@ -2,6 +2,7 @@
 import argparse
 import json
 from pathlib import Path
+import sys
 
 # Third-party
 import colorama
@@ -81,4 +82,4 @@ def main() -> None:
     else:
         parser.print_help()
 
-    return result
+    sys.exit(result)

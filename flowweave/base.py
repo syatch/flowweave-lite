@@ -9,8 +9,8 @@ from colorama import Fore
 from .print_lock import print_lock
 
 class FlowWeaveResult(IntEnum):
-    FAIL = 0
-    SUCCESS = 1
+    SUCCESS = 0
+    FAIL = 1
     IGNORE = 2
 
 class TaskData:
