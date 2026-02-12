@@ -62,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     result = FlowWeaveResult.SUCCESS
 
-    colorama.init(autoreset=True)
+    colorama.init(autoreset=True, strip=False, convert=False)
 
     parser = build_parser()
     args = parser.parse_args()
@@ -73,7 +73,9 @@ def main() -> None:
         if not setting_path:
             parser.error("run requires flow_file")
         results = FlowWeave.run(setting_file=setting_path, parallel=args.parallel, show_log = args.log)
-        result = all(x == FlowWeaveResult.SUCCESS for x in results)
+        all_success = all(x == FlowWeaveResult.SUCCESS for x in results)
+        if not all_success:
+            result = FlowWeaveResult.FAIL
     elif args.command == "info":
         if args.flow_file:
             show_flow_op(setting_path, args.flow_file, info=True)
